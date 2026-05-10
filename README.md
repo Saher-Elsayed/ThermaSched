@@ -208,7 +208,7 @@ Non-adjacent: C_02=0.012, C_13=0.011 W/°C
 @article{elsayed2025thermasched,
   title     = {{ThermaSched}: Thermal-Aware Multi-Tenant {DNN} Workload Scheduling
                for Energy-Efficient {MPSoC} {FPGA} Edge Inference},
-  author    = {Elsayed, Saher},
+  author    = {anny},
   journal   = {Sustainable Computing: Informatics and Systems},
   year      = {2025},
   doi       = {10.xxxx/suscom.2025.xxxxxx},
@@ -226,5 +226,5 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 ## Contact
 
-Saher Elsayed — selsayed@seas.upenn.edu
+ann
 Department of Computer and Information Science, University of Pennsylvania

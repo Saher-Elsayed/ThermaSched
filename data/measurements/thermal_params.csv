@@ -1,0 +1,32 @@
+# ThermaSched Calibrated Thermal Model Parameters
+# Source: Step-response calibration on Xilinx ZCU102 (ZU9EG MPSoC)
+# Calibration date: 2025-01
+# Board: ZCU102 Rev 1.1, ambient = 25.0°C
+# Power standard: INA226 current sensors, calibrated vs Keysight N6705C (±2%)
+# Reference: ThermaSched paper, Table 1
+#
+# G_j asymmetry note (§3.1):
+#   Inner tiles T1,T2 show higher G_j (0.383, 0.365 W/°C) than edge tiles T0,T3
+#   (0.302, 0.320 W/°C). This is a calibration-condition artifact: during
+#   single-tile step-response measurement, inner tiles are flanked by active
+#   heated neighbors, compressing the die-to-ambient gradient and producing
+#   apparent higher G_j. This is not a true physical conductance difference.
+#
+# Columns: parameter, T0, T1, T2, T3
+C_j,1.42,1.38,1.35,1.41
+G_j,0.302,0.383,0.365,0.320
+tau_j,4.70,3.60,3.70,4.40
+r_sq,0.9921,0.9887,0.9904,0.9931
+# Adjacent lateral conductances (W/°C): G_01, G_12, G_23
+G_jk,0.042,0.038,0.045
+# Non-adjacent conductances (W/°C): C_02, C_13
+# Note: C_jl ≈ 28-32% of G_jk — physically substantial secondary coupling
+C_jl,0.012,0.011
+# Calibration power applied (W)
+P_cal,2.5,2.5,2.5,2.5
+# Ambient temperature during calibration (°C)
+T_amb,25.0,25.0,25.0,25.0
+# Euler stability check
+euler_dt_s,0.1
+euler_2tau_min_s,7.2
+euler_pass,TRUE

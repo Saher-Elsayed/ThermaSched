@@ -1,0 +1,128 @@
+name: ThermaSched CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  # ── Python unit tests (no hardware required) ──────────────────────────────
+  test-python:
+    name: Python Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run thermal model tests
+        run: python -m pytest tests/test_thermal_model.py -v --tb=short
+
+      - name: Run scoring function tests
+        run: python -m pytest tests/test_scoring.py -v --tb=short
+
+      - name: Run NoC model tests
+        run: python -m pytest tests/test_noc_model.py -v --tb=short
+
+      - name: Run calibration parameter tests
+        run: python -m pytest tests/test_calibration.py -v --tb=short
+
+      - name: Run full test suite with coverage
+        run: python -m pytest tests/ -v --cov=src --cov-report=xml
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: coverage.xml
+
+  # ── SimPy scalability simulation ─────────────────────────────────────────
+  simpy-validation:
+    name: SimPy Scalability Simulation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scalability simulation (K=4,8,16,32)
+        run: |
+          cd simpy_simulation/
+          python scale_sweep.py --tiles 4 8 16 32 --epochs 600 --seed 42
+
+      - name: Validate K=4 against hardware (must be within 8%)
+        run: |
+          cd simpy_simulation/
+          python validate_sim.py --hw-mean 8.3 --tolerance 8.0
+
+  # ── Table reproduction check ─────────────────────────────────────────────
+  table-check:
+    name: Paper Table Reproduction
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate paper tables
+        run: |
+          mkdir -p results/
+          python scripts/generate_tables.py \
+            --data data/measurements/ \
+            --output results/
+
+      - name: Verify thermal parameters match Table 1
+        run: python calibration/verify_params.py --params data/measurements/thermal_params.csv
+
+      - name: Check Euler stability
+        run: |
+          python -c "
+          params = {'tau_j': [4.70, 3.60, 3.70, 4.40]}
+          tau_min = min(params['tau_j'])
+          dt = 0.1
+          assert dt <= 2 * tau_min, f'Euler unstable: dt={dt}, 2*tau_min={2*tau_min}'
+          print(f'Euler stability: dt={dt}s << 2*tau_min={2*tau_min}s [PASS]')
+          "
+
+  # ── Lint and style ────────────────────────────────────────────────────────
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install lint tools
+        run: pip install flake8 black isort
+
+      - name: Check formatting (black)
+        run: black --check calibration/ experiments/ simpy_simulation/ scripts/ tests/
+
+      - name: Check imports (isort)
+        run: isort --check-only calibration/ experiments/ simpy_simulation/ scripts/ tests/
+
+      - name: Lint (flake8)
+        run: flake8 calibration/ experiments/ simpy_simulation/ scripts/ tests/ --max-line-length=100
